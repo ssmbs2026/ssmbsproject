@@ -1,0 +1,45 @@
+﻿# Manual Build & Package workflow
+name: Manual Build & Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        default: '18'
+
+jobs:
+  build-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ github.event.inputs.node-version || '18' }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Create zip of build output
+        run: |
+          mkdir -p artifacts
+          if [ -d "dist" ]; then
+            zip -r artifacts/deployable.zip dist
+          else
+            echo "Build output 'dist' not found"
+            exit 1
+          fi
+
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployable
+          path: artifacts/deployable.zip
